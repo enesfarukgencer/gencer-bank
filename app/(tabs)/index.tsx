@@ -1,19 +1,45 @@
-import React, { useState } from 'react'; // useState'i ekledik
-import { StyleSheet, Text, View, TouchableOpacity, SafeAreaView } from 'react-native';
-
+import React, { useState, useEffect } from 'react'; // useEffect'i ekledik
+import { StyleSheet, Text, View, TouchableOpacity, SafeAreaView, ActivityIndicator } from 'react-native';
+import axios from 'axios'; // Axios eklendi
 export default function App() {
   // Başlangıç bakiyesini tanımlıyoruz
-  const [bakiye, setBakiye] = useState(125500.00);
+  const [bakiye, setBakiye] = useState(0);
+  const [yukleniyor, setYukleniyor] = useState(true);
 
-  // Para gönderme fonksiyonu
-  const paraGonder = () => {
-    if (bakiye >= 500) {
-      setBakiye(bakiye - 500);
-    } else {
-      alert("Yetersiz bakiye!");
+  // Bilgisayarının Yerel IP Adresi (Örn: 192.168.1.x)
+  const API_URL = " http://10.202.34.181:5000/api"; 
+
+  // Uygulama açıldığında bakiyeyi sunucudan çek
+  useEffect(() => {
+    verileriGetir();
+  }, []);
+
+  const verileriGetir = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/bakiye`);
+      setBakiye(response.data.bakiye);
+    } catch (error) {
+      console.error("Veri çekme hatası:", error);
+    } finally {
+      setYukleniyor(false);
     }
   };
 
+  const paraGonder = async () => {
+    try {
+      const response = await axios.post(`${API_URL}/islem`, { miktar: 500 });
+      setBakiye(response.data.yeniBakiye);
+      alert("500 TL başarıyla gönderildi!");
+    } catch (error) {
+      alert(error.response?.data?.hata || "Sunucuya bağlanılamadı");
+    }
+  };
+
+  if (yukleniyor) {
+    return (
+      <View style={{flex: 1, justifyContent: 'center'}}><ActivityIndicator size="large" color="#004a99" /></View>
+    );
+  }
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
